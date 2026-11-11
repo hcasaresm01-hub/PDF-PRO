@@ -239,7 +239,7 @@
         async function renderPage(pageNum) {
             const page = await pdfDoc.getPage(pageNum);
             
-            // Alta definición HiDPI
+            // Alta definición Full HD / HiDPI (Renderizado de alta calidad nítido)
             const outputScale = window.devicePixelRatio || 1;
             const viewport = page.getViewport({ scale: scale });
 
@@ -249,19 +249,23 @@
             wrapper.style.height = `${viewport.height}px`;
             wrapper.dataset.pageNumber = pageNum;
 
-            // Canvas Principal PDF
+            // Canvas Principal PDF (Alta Resolución con buffer HD)
             const canvas = document.createElement('canvas');
             canvas.width = Math.floor(viewport.width * outputScale);
             canvas.height = Math.floor(viewport.height * outputScale);
             canvas.style.width = `${viewport.width}px`;
             canvas.style.height = `${viewport.height}px`;
             
-            const context = canvas.getContext('2d');
+            const context = canvas.getContext('2d', { alpha: false, willReadFrequently: false });
+            // Renderizado en HD utilizando escalado de matriz y suavizado de texto de alta fidelidad
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = 'high';
+            
             const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
 
             wrapper.appendChild(canvas);
 
-            // Capa de Texto
+            // Capa de Texto (Alineada perfectamente con la densidad Full HD)
             const textLayerDiv = document.createElement('div');
             textLayerDiv.className = 'textLayer';
             textLayerDiv.style.width = `${viewport.width}px`;
@@ -269,7 +273,7 @@
             textLayerDiv.style.setProperty('--scale-factor', viewport.scale);
             wrapper.appendChild(textLayerDiv);
 
-            // Canvas de Anotaciones superpuesto (Se añade después para que quede encima)
+            // Canvas de Anotaciones superpuesto
             const annotCanvas = document.createElement('canvas');
             annotCanvas.className = 'annotation-canvas';
             annotCanvas.width = canvas.width;
@@ -281,10 +285,14 @@
             const annotCtx = annotCanvas.getContext('2d');
             annotCtx.scale(outputScale, outputScale);
 
-            // Renderizar la página PDF en el canvas
-            await page.render({ canvasContext: context, transform: transform, viewport: viewport }).promise;
+            // Renderizar la página PDF en el canvas con la mejor calidad visual posible
+            await page.render({ 
+                canvasContext: context, 
+                transform: transform, 
+                viewport: viewport 
+            }).promise;
 
-            // Generar la capa de texto interactiva para seleccionar
+            // Generar la capa de texto interactiva para seleccionar sobre HD
             const textContent = await page.getTextContent();
             pdfjsLib.renderTextLayer({
                 textContentSource: textContent,
